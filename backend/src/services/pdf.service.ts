@@ -1,14 +1,19 @@
 import { PDF } from "../models/pdf.model";
-import { Activity } from "../models/activity.model";
 
 export const uploadPDF = async (userId: string, file: Express.Multer.File) => {
-  const pdf = await PDF.create({
+  return await PDF.create({
     userId,
-    filename: file.filename,
+    fileName: file.filename,
     originalName: file.originalname,
-    size: file.size
+    size: file.size,
   });
+};
 
-  await Activity.create({ userId, action: `Uploaded ${file.originalname}` });
-  return pdf;
+export const getPDFs = async (userId: string) => {
+ 
+  return await PDF.find({ userId: userId }).sort({ uploadedAt: -1 });
+};
+
+export const deletePDF = async (id: string) => {
+  return await PDF.findByIdAndDelete(id);
 };

@@ -1,4 +1,4 @@
- // Auth API Types =============================== //
+// Auth API Types =============================== //
 
 export interface LoginRequest {
   email: string;
@@ -15,7 +15,7 @@ export interface RegisterRequest {
   name: string;
   email: string;
   password: string;
-  role: string
+  role: string;
 }
 
 export interface RegisterResponse {
@@ -23,14 +23,21 @@ export interface RegisterResponse {
   user: User;
 }
 
-
 // User API Types =============================== //
 
 export interface User {
-  id: number;
+  _id: number;
   name: string;
   email: string;
-  role: 'ADMIN' | 'USER' | 'GUEST';
+  role: "ADMIN" | "USER" | "GUEST";
   createdAt?: string;
+}
 
+export interface PDF {
+  id: number;
+  userId: string;
+  fileName: string;
+  originalName: string;
+  uploadedAt: string;
+  size: number;
 }

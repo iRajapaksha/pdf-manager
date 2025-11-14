@@ -1,3 +1,4 @@
+import { login, register } from "@/api";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -9,7 +10,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { login, register } from "@/lib/api";
 import { Tabs } from "@radix-ui/react-tabs";
 import axios from "axios";
 import { Loader2 } from "lucide-react";
@@ -33,8 +33,8 @@ export function LoginCard() {
     try {
       const response = await login({ email, password });
       // Store token if returned
-      if (response.token) {
-        localStorage.setItem("authToken", response.token);
+      if (response.accessToken) {
+        localStorage.setItem("authToken", response.accessToken);
       }
 
       // Navigate to home page on successful signin
@@ -66,8 +66,8 @@ export function LoginCard() {
       });
 
       // Store token if returned
-      if (response.token) {
-        localStorage.setItem("authToken", response.token);
+      if (response.accessToken) {
+        localStorage.setItem("authToken", response.accessToken);
       }
 
       // Navigate to home page on successful signup
@@ -85,7 +85,6 @@ export function LoginCard() {
     }
   };
 
-  
   return (
     <Card className="w-full border-slate-200 shadow-lg">
       <CardHeader className="space-y-1">

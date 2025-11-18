@@ -18,3 +18,34 @@ export const uploadPDF = async (file: File): Promise<void> => {
     headers: { "Content-Type": "multipart/form-data" },
   });
 };
+
+export const getPDF = async (id:number): Promise<PDF> =>{
+  const response = await axiosInstance.get(`/pdf/${id}`)
+  return response.data;
+  
+}
+
+export const getPdfDocument = async (id: string) => {
+  return await axiosInstance.get(`/pdf/${id}`); 
+};
+
+export const logActivity = async (
+  action: string,
+  subjectType: string,
+  subjectId: string,
+  metadata: Record<string, string | null > = {}
+): Promise<void> => {
+  await axiosInstance.post("/activity/log", {
+    action,
+    subject_type: subjectType,
+    subject_id: subjectId,
+    metadata,
+  });
+};
+
+export const getPDFUrl = async (filePath: string): Promise<string> => {
+  const response = await axiosInstance.get("/pdf/get-url", {
+    params: { file_path: filePath },
+  });
+  return response.data.url;
+};

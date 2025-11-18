@@ -30,3 +30,12 @@ export const deletePDF = async (req: Request, res: Response) => {
     res.status(400).json({ message: error.message });
   }
 };
+
+export const getPDFById = async (req: Request, res: Response) => {
+  try {
+    const pdf = await PDFService.getPDFById(req.params.id);
+    res.json(pdf);
+  } catch (error: any) {
+    res.status(400).json({ message: error.message });
+  }
+};

@@ -17,3 +17,8 @@ export const getPDFs = async (userId: string) => {
 export const deletePDF = async (id: string) => {
   return await PDF.findByIdAndDelete(id);
 };
+
+
+export const getPDFById = async (id: string) => {
+  return await PDF.findById(id);
+};

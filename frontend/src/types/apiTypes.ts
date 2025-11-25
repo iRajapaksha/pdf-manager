@@ -34,7 +34,7 @@ export interface User {
 }
 
 export interface PDF {
-  id: number;
+  _id: number;
   userId: string;
   fileName: string;
   originalName: string;

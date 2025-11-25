@@ -42,30 +42,57 @@ const PDFList = ({ refreshTrigger }: PDFListProps) => {
   }, [refreshTrigger]);
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this PDF?")) return;
+    
+    // if (!confirm("Are you sure you want to delete this PDF?")) return;
+    toast.warning("Are you sure you want to delete this PDF?", { duration: 10000 ,
+      action: {
+        label: "Confirm",
+        onClick: async () => {
+          toast.dismiss();
+          // Proceed with deletion
+          try {
+            setDeletingId(id);
+            await deletePdf(id);
+            toast.success("Success", {
+              description: "PDF deleted successfully",
+            });
+            fetchPDFs();
+          } catch (error) {
+            console.log(error);
+            toast.error("Error deleting PDF", {
+              description: axios.isAxiosError(error)
+                ? error.response?.data?.message || error.message
+                : "An unexpected error occurred",
+            });
+          } finally {
+            setDeletingId(null);
+          }
+        },
+      },
+    });
 
     setDeletingId(id);
 
-    try {
-      await deletePdf(id);
-      toast.success("Success", {
-        description: "PDF deleted successfully",
-      });
-      fetchPDFs();
-    } catch (error) {
-      console.log(error);
+    // try {
+    //   await deletePdf(id);
+    //   toast.success("Success", {
+    //     description: "PDF deleted successfully",
+    //   });
+    //   fetchPDFs();
+    // } catch (error) {
+    //   console.log(error);
 
-      toast.error("Error deleting PDF", {
-        description: axios.isAxiosError(error),
-      });
-    } finally {
-      setDeletingId(null);
-    }
+    //   toast.error("Error deleting PDF", {
+    //     description: axios.isAxiosError(error),
+    //   });
+    // } finally {
+    //   setDeletingId(null);
+    // }
   };
 
   const handleView = (pdf: PDF) => {
     navigate(
-      `/pdf-viewer?id=${pdf.id}&name=${encodeURIComponent(pdf.fileName)}`
+      `/pdf-viewer?id=${pdf._id}&name=${encodeURIComponent(pdf.fileName)}`
     );
   };
 
@@ -110,7 +137,7 @@ const PDFList = ({ refreshTrigger }: PDFListProps) => {
           <div className="space-y-3">
             {pdfs.map((pdf) => (
               <div
-                key={pdf.id}
+                key={pdf._id}
                 className="group flex items-center justify-between p-4 rounded-lg border border-border/50 bg-card/50 hover:bg-accent/5 transition-all duration-200 hover:shadow-md"
               >
                 <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -145,15 +172,11 @@ const PDFList = ({ refreshTrigger }: PDFListProps) => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => handleDelete(pdf.id)}
-                    disabled={deletingId === pdf.id}
+                    onClick={() => handleDelete(pdf._id)}
+                    disabled={deletingId === pdf._id}
                     className="hover:bg-destructive/10 hover:text-destructive"
                   >
-                    {deletingId === pdf.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-4 h-4" />
-                    )}
+                                          <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
               </div>

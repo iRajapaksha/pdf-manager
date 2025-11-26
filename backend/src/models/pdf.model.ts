@@ -5,7 +5,8 @@ const pdfSchema = new mongoose.Schema({
   fileName: String,
   originalName: String,
   uploadedAt: { type: Date, default: Date.now },
-  size: Number
+  size: Number,
+  url: String,
 });
 
 export const PDF = mongoose.model("PDF", pdfSchema);

@@ -176,7 +176,7 @@ const PDFList = ({ refreshTrigger }: PDFListProps) => {
                     disabled={deletingId === pdf._id}
                     className="hover:bg-destructive/10 hover:text-destructive"
                   >
-                                          <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
               </div>

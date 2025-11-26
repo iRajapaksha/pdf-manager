@@ -1,4 +1,5 @@
-import { getPdfDocument, getPDFUrl, logActivity } from "@/api/pdfApi";
+import axiosInstance from "@/api/axiosInstance";
+import { getPdfDocument, getPDFUrl } from "@/api/pdfApi";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import axios from "axios";
@@ -12,6 +13,9 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
+// react-pdf requires these styles for text & annotation layers (prevents warnings)
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -24,6 +28,9 @@ const PDFViewer = () => {
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [scale, setScale] = useState<number>(1.0);
   const [loading, setLoading] = useState(true);
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
+  const [triedBlobFetch, setTriedBlobFetch] = useState(false);
+  const [originalName, setOriginalName] = useState<string | null>(null);
 
   const pdfId = searchParams.get("id");
   const fileName = searchParams.get("name");
@@ -36,30 +43,77 @@ const PDFViewer = () => {
 
       try {
         const response = await getPdfDocument(pdfId);
-        const filePath = response.data.filePath;
+        setOriginalName(response.data?.originalName || null);
+        const data = response.data || {};
 
-        if (filePath) {
-          const url = await getPDFUrl(filePath); 
-          if (url) {
-            setPdfUrl(url);
-            await logActivity("view", "pdf", pdfId, { file_name: fileName });
+        let url: string | null = null;
+
+        if (data.filePath) {
+          // Old-style response: server returns filePath that needs resolution
+          url = await getPDFUrl(data.filePath);
+        } else if (data.url) {
+          const raw = String(data.url);
+          if (/^https?:\/\//i.test(raw)) {
+            url = raw; // absolute
+          } else if (raw.startsWith("/")) {
+            // Use axiosInstance baseURL to compute origin (strip trailing /api)
+            const apiBase =
+              axiosInstance.defaults.baseURL || window.location.origin;
+            const origin = apiBase.replace(/\/api\/?$/, "");
+            url = origin + raw;
+          } else {
+            url = window.location.origin + "/" + raw;
           }
         }
+
+        if (url) {
+          setPdfUrl(url);
+        }
       } catch (error) {
-        const errorMessage = axios.isAxiosError(error)
+        const errorMessage = axios.isAxiosError(error);
         console.log(errorMessage);
-        
+
         toast.error("Error", { description: "Failed to load PDF" });
         navigate("/");
       }
     };
 
     checkAuth();
-  }, [pdfId, fileName, navigate, toast]);
+  }, [pdfId, fileName, navigate]);
+
+  // revoke object URLs when changed/unmounted
+  useEffect(() => {
+    return () => {
+      if (objectUrl) {
+        try {
+          URL.revokeObjectURL(objectUrl);
+        } catch (e) {
+          console.error("Failed to revoke object URL", e);
+        }
+      }
+    };
+  }, [objectUrl]);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
     setLoading(false);
+  };
+
+  const onDocumentLoadError = async (err: Error) => {
+    console.warn("react-pdf onLoadError:", err);
+    // try fetching as blob once if not already attempted
+    if (pdfUrl && !triedBlobFetch) {
+      try {
+        setTriedBlobFetch(true);
+        const res = await axios.get(pdfUrl, { responseType: "blob" });
+        const blob = res.data as Blob;
+        const objUrl = URL.createObjectURL(blob);
+        setObjectUrl(objUrl);
+        setPdfUrl(objUrl);
+      } catch (e) {
+        console.error("Blob fallback failed", e);
+      }
+    }
   };
 
   const changePage = (offset: number) => {
@@ -73,7 +127,7 @@ const PDFViewer = () => {
   const zoomOut = () => setScale((prev) => Math.max(prev - 0.2, 0.6));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-secondary/20">
+    <div className="min-h-screen bg-linear-to-br from-background to-secondary/20">
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10 shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
@@ -88,7 +142,7 @@ const PDFViewer = () => {
               </Button>
               <div>
                 <h1 className="text-lg font-semibold">
-                  {fileName || "PDF Document"}
+                  {originalName || "PDF Document"}
                 </h1>
                 {numPages > 0 && (
                   <p className="text-sm text-muted-foreground">
@@ -135,6 +189,7 @@ const PDFViewer = () => {
               <Document
                 file={pdfUrl}
                 onLoadSuccess={onDocumentLoadSuccess}
+                onLoadError={onDocumentLoadError}
                 loading={
                   <div className="flex items-center justify-center py-20">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -186,5 +241,9 @@ const PDFViewer = () => {
     </div>
   );
 };
+
+// cleanup object url on unmount
+// (This cleanup is placed outside the component effect because objectUrl is a component state —
+//  we ensure revocation when objectUrl changes)
 
 export default PDFViewer;
